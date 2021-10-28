@@ -17,6 +17,22 @@ free(doc)
 links2 <- data.frame(link = links) %>%
   filter(grepl("https://data.dft.gov.uk/driving-licence-data/", link))
 
-# need to download files first then read
-download.file(links2$link[2], 
-              destfile = paste0(getwd(), stringr::str_sub(links2$link[2], 45, -1) ))
+dir.create("licenses")
+
+## need to download files first then read
+# download.file(links2$link[2], 
+#               destfile = paste0(getwd(), "/licenses", stringr::str_sub(links2$link[2], 45, -1) ))
+# 
+
+for(i in 1:nrow(links2)){
+  #tryCatch(
+    download.file(links2$link[i], 
+                destfile = paste0(getwd(), "/licenses", stringr::str_sub(links2$link[i], 45, -1) ))
+  #, 
+  #error = function(e) print(paste(file, 'did not work out')) 
+ # )  
+  
+           }
+
+  
+purrr::map()
