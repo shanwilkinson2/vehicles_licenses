@@ -9,6 +9,9 @@ bin-release/
 
 # data files
 *.xls
+*.xlsx
+*.doc
+*.docx
 
 # Executables
 *.swf
