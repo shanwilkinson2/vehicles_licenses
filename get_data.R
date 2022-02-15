@@ -76,17 +76,63 @@ library(readxl)
               )
     
 # read in driving licence holders per postcode 
-    file_name_path <- paste0("./licenses/", excel_files[i,1])
-    selected_sheet <- "DRL0102"
-    sheet_to_read <- sheet_names2 %>%
-       filter(filename == excel_files[i,1] & sheetname_code == selected_sheet
-            
-            )
     
-    data <- read_excel(file_name_path,
-                       sheet = sheet_to_read[1, "sheetname"],
-                       skip = 9)
-    # first row is another heading
-       data[-1,] %>%
-          View()
+    for(i in 1: nrow(excel_files)){
+      
+      file_name_path <- paste0("./licenses/", excel_files[i,1])
+      file_name_date <- sheet_names2 %>%
+        filter(filename == excel_files[i,1]) %>%
+        head(1) %>%
+        pull(file_date_date)
+      selected_sheet <- "DRL0102"
+      sheet_to_read <- sheet_names2 %>%
+         filter(filename == excel_files[i,1] & sheetname_code == selected_sheet
+                )
+      
+      # read in sheet
+        data <- read_excel(file_name_path,
+                         sheet = sheet_to_read[1, "sheetname"],
+                         skip = 9) %>%
+          mutate(file_date = file_name_date)
+        
+      # first row is another heading
+         data <- data[-1,] 
+         names(data)[1] <- "pcode_district" 
+         
+         if(i == 1) {
+           sheet_data <- data
+         } else {
+           sheet_data <- bind_rows(sheet_data, data)
+         }
+         
+         if(i == nrow(excel_files)) {
+           rm(data)
+           rm(file_name_date)
+           rm(file_name_path)
+           sheet_data <- sheet_data[,1:8] %>%
+             janitor::clean_names()
+         }
+      }
+
     
+    # write file 
+    data.table::fwrite(sheet_data, "pcode dist driving licenses.csv")
+
+    # test - pcode district has zero if it doesn't need it 
+      # e.g. BL1 is BL01
+    
+    sheet_data %>%
+      filter(pcode_district %in% c("BL01", "BL02", "BL03",
+                                   "BL04", "BL05", "BL06", "BL07",
+                                   "BL07", "BL08", "BL09",
+                                   "WN1", "M46")) %>%
+      group_by(pcode_district)  %>%
+      #View()
+      ggplot() +
+      geom_line(aes(x = file_date, y = full_total, color = pcode_district))
+
+    # early dates are missing - need to skip more rows
+    sheet_data %>%
+      filter(file_date <"01-01-2017") %>%
+      View()
+        
