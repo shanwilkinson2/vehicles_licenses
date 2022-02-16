@@ -3,6 +3,7 @@
 library(XML)
 library(dplyr)
 library(readxl)
+library(ggplot2)
 
 
 # driving license holders
@@ -76,6 +77,7 @@ library(readxl)
               )
     
 # read in driving licence holders per postcode 
+  # different number of rows to skip in earlier files & on different sheets
     
     for(i in 1: nrow(excel_files)){
       
@@ -92,7 +94,9 @@ library(readxl)
       # read in sheet
         data <- read_excel(file_name_path,
                          sheet = sheet_to_read[1, "sheetname"],
-                         skip = 9) %>%
+                         # more stuff at the top in earlier files
+                         skip = ifelse(file_name_date < "2017-01-01", 27, 9)
+                         ) %>%
           mutate(file_date = file_name_date)
         
       # first row is another heading
@@ -116,10 +120,11 @@ library(readxl)
 
     
     # write file 
-    data.table::fwrite(sheet_data, "pcode dist driving licenses.csv")
+    # data.table::fwrite(sheet_data, "pcode dist driving licenses.csv")
 
     # test - pcode district has zero if it doesn't need it 
       # e.g. BL1 is BL01
+      # 2016 cells are shifted down with 3 extra rows in postcode district col
     
     sheet_data %>%
       filter(pcode_district %in% c("BL01", "BL02", "BL03",
