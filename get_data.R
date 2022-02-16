@@ -76,6 +76,8 @@ library(ggplot2)
               file_date_date = lubridate::dmy(file_date)
               )
     
+    
+    
 # read in driving licence holders per postcode 
   # different number of rows to skip in earlier files & on different sheets
     
@@ -95,8 +97,12 @@ library(ggplot2)
         data <- read_excel(file_name_path,
                          sheet = sheet_to_read[1, "sheetname"],
                          # more stuff at the top in earlier files
-                         skip = ifelse(file_name_date < "2017-01-01", 27, 9)
-                         ) %>%
+                         skip = case_when(
+                           file_name_date == "2012-11-01" ~25,
+                           file_name_date == "2013-07-01" ~25,
+                           file_name_date < "2017-01-01"  ~27,
+                          TRUE ~9
+                         )) %>%
           mutate(file_date = file_name_date)
         
       # first row is another heading
@@ -125,6 +131,7 @@ library(ggplot2)
     # test - pcode district has zero if it doesn't need it 
       # e.g. BL1 is BL01
       # 2016 cells are shifted down with 3 extra rows in postcode district col
+      # 2013 - some issue
     
     sheet_data %>%
       filter(pcode_district %in% c("BL01", "BL02", "BL03",
@@ -138,6 +145,9 @@ library(ggplot2)
 
     # early dates are missing - need to skip more rows
     sheet_data %>%
-      filter(file_date <"01-01-2017") %>%
+      filter(file_date == "2013-07-01") %>%
+      arrange(desc(file_date)) %>%
       View()
+    
+    
         
