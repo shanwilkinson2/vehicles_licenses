@@ -5,6 +5,10 @@ library(dplyr)
 library(readxl)
 library(ggplot2)
 
+# read in driving license data generated below
+sheet_data <- read.csv("pcode dist driving licenses.csv")
+  # save for app
+    saveRDS(sheet_data, "./vehicles_licenses/pcode_dist_driving_license.RDS")
 
 # driving license holders
 # https://data.gov.uk/dataset/d0be1ed2-9907-4ec4-b552-c048f6aec16a/gb-driving-licence-data
