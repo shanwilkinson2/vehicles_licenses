@@ -8,7 +8,7 @@ library(ggplot2)
 # read in driving license data generated below
 sheet_data <- read.csv("pcode dist driving licenses.csv")
   # save for app
-    saveRDS(sheet_data, "./vehicles_licenses/pcode_dist_driving_license.RDS")
+    saveRDS(sheet_data2, "./vehicles_licenses/pcode_dist_driving_license.RDS")
 
 # driving license holders
 # https://data.gov.uk/dataset/d0be1ed2-9907-4ec4-b552-c048f6aec16a/gb-driving-licence-data
@@ -128,9 +128,18 @@ sheet_data <- read.csv("pcode dist driving licenses.csv")
          }
       }
 
+    # make postcodes in the usual format (e.g not BL01 but BL1)
+    sheet_data2 <- sheet_data %>%
+      mutate(pcode_dist_letters = stringr::str_extract(pcode_district, "[:alpha:]+"),
+             pcode_dist_numbers = stringr::str_extract(pcode_district, "[:digit:]+"),
+             pcode_dist_numbers = as.numeric(pcode_dist_numbers),
+             pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
+             ) %>%
+    select(-c(pcode_dist_letters, pcode_dist_numbers))
+    
     
     # write file 
-    # data.table::fwrite(sheet_data, "pcode dist driving licenses.csv")
+    # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
 
     # test - pcode district has zero if it doesn't need it 
       # e.g. BL1 is BL01
