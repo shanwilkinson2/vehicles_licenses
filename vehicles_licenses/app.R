@@ -3,6 +3,7 @@
 library(shiny)
 library(dplyr)
 library(shinydashboard)
+library(plotly)
 
 # load data #########################################
 # for testing - setwd("./vehicles_licenses")
@@ -34,7 +35,8 @@ ui <- dashboardPage(skin = "red",
     selectizeInput(inputId = "select_pcode_dist", 
                 label = "Select postcode district:", 
                 choices = NULL,
-                multiple = TRUE
+                multiple = TRUE,
+                selected = "BL1"
     ),
     em("(delete selected to type & search)")
   ),
@@ -58,7 +60,11 @@ ui <- dashboardPage(skin = "red",
         a("data.gov.uk",
           href = "https://data.gov.uk/dataset/d0be1ed2-9907-4ec4-b552-c048f6aec16a/gb-driving-licence-data",
           target = "_blank"
-          )
+          ),
+        p("Code for this app is on my github"),
+        a("link", 
+          href = "https://github.com/shanwilkinson2/vehicles_licenses",
+          target = "_blank")
       )
     )
   )
@@ -67,15 +73,15 @@ ui <- dashboardPage(skin = "red",
     
 
 # server ##########################################################
-server <- function(input, output) {
+server <- function(input, output, session) {
 
   # generate options for pcode dist dropdown
-  server <- function(input, output, session) {
-    updateSelectizeInput(session, "select_pcode_dist", 
+    updateSelectizeInput(session = session, 
+                         inputId = "select_pcode_dist", 
                          choices = licenses$pcode_district, 
                          server = TRUE
                          )
-  }
+  
   
   # generate data for download button
   output$license_data <- downloadHandler(filename = "license_holders.csv",
@@ -86,17 +92,20 @@ server <- function(input, output) {
                                       })
   
   # make chart of license holders over time
-  output$licenses_chart <- renderPlotly({
-    chart_data <- sheet_data %>%
-      filter(pcode_district %in% c("BL1", "BL2", "BL3")) %>%
+  
+    chart_data <- reactive({licenses %>%
+      filter(pcode_district %in% input$select_pcode_dist) %>%
+      # filter(pcode_district %in% c("BL1", "BL2", "BL3")) %>%
       group_by(pcode_district)
+    })
     
-    chart_data %>%
+    output$licenses_chart <- renderPlotly({
+    chart_data() %>%
       plot_ly() %>%
       add_lines(x = ~file_date, y = ~full_total, color = ~pcode_district) %>%
       layout(
         xaxis = list(title = "Date",
-                     tickvals = format(chart_data$file_date, format = "%B %Y"),
+                     tickvals = format(chart_data()$file_date, format = "%B %Y"),
                      tickangle = -45),
         yaxis = list(title = "Number of full license holders"), 
         title = "Driving license holders over time"
