@@ -1,0 +1,13 @@
+name: vehicles_licenses
+title: vehicles_licenses
+username:
+account: shanwilkinson2
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5704453
+bundleId: 5603639
+url: https://shanwilkinson2.shinyapps.io/vehicles_licenses/
+when: 1645482385.81767
+lastSyncTime: 1645482385.81767
+asMultiple: FALSE
+asStatic: FALSE

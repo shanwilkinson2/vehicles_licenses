@@ -31,14 +31,12 @@ ui <- dashboardPage(skin = "red",
     
     # select pcode district
       # server side autocomplete as v many
-      # not working yet
     selectizeInput(inputId = "select_pcode_dist", 
                 label = "Select postcode district:", 
                 choices = NULL,
-                multiple = TRUE,
-                selected = "BL1"
+                multiple = TRUE
     ),
-    em("(delete selected to type & search)")
+    em("(delete selected or type & search)")
   ),
   
   dashboardBody(
@@ -61,6 +59,10 @@ ui <- dashboardPage(skin = "red",
           href = "https://data.gov.uk/dataset/d0be1ed2-9907-4ec4-b552-c048f6aec16a/gb-driving-licence-data",
           target = "_blank"
           ),
+        p("Population is usual residents (all ages) from 2011 census. No mid year estimates are available for postcode district. Best fit may be added to this app at a later date."),
+        a("Populations from Nomis",
+          href = "https://www.nomisweb.co.uk/census/2011/ks101ew",
+          target = "_blank"),
         p("Code for this app is on my github"),
         a("link", 
           href = "https://github.com/shanwilkinson2/vehicles_licenses",
@@ -79,7 +81,8 @@ server <- function(input, output, session) {
     updateSelectizeInput(session = session, 
                          inputId = "select_pcode_dist", 
                          choices = licenses$pcode_district, 
-                         server = TRUE
+                         server = TRUE,
+                         selected = c("BL3", "BL5", "BL7")
                          )
   
   
@@ -102,12 +105,12 @@ server <- function(input, output, session) {
     output$licenses_chart <- renderPlotly({
     chart_data() %>%
       plot_ly() %>%
-      add_lines(x = ~file_date, y = ~full_total, color = ~pcode_district) %>%
+      add_lines(x = ~file_date, y = ~full_licenses_per_resident, color = ~pcode_district) %>%
       layout(
         xaxis = list(title = "Date",
                      tickvals = format(chart_data()$file_date, format = "%B %Y"),
                      tickangle = -45),
-        yaxis = list(title = "Number of full license holders"), 
+        yaxis = list(title = "Full license holders per resident"), 
         title = "Driving license holders over time"
       )
     
