@@ -1,14 +1,7 @@
-# read in license holders
+# read in penalty points
 
 library(dplyr)
 library(ggplot2)
-
-# read in driving license data generated below
-sheet_data <- read.csv("pcode dist driving licenses.csv")
-# save for app
-saveRDS(sheet_data2, "./vehicles_licenses/pcode_dist_driving_license.RDS")
-
-################################################################
 
 # get list of filenames & file types that have been downloaded
 excel_files <- list.files(path="./licenses", pattern = ".xls") %>%
