@@ -5,6 +5,15 @@ library(dplyr)
 library(readxl)
 library(ggplot2)
 
+# read in list of what's downloaded, generated below
+  # read list of files
+  excel_files <- readRDS("excel_files.RDS")
+
+  # read list of sheet names per file
+  sheet_names2 <- readRDS("sheet_names2.RDS")
+  
+########################################################
+
 # driving license holders
 # https://data.gov.uk/dataset/d0be1ed2-9907-4ec4-b552-c048f6aec16a/gb-driving-licence-data
 
@@ -228,4 +237,56 @@ library(ggplot2)
     # write file 
     # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
     
+##################################################################    
+    
+  # get list of filenames & file types that have been downloaded
+    excel_files <- list.files(path="./licenses", pattern = ".xls") %>%
+      as.data.frame()
+    
+    names(excel_files) = "filename"
+    
+    excel_files <- excel_files %>%
+      mutate(filetype = stringr::str_extract(filename, "\\.xlsx?$"))
+    
+    # write list of file names
+    saveRDS(excel_files, "excel_files.RDS")
+
+    
+  # get all sheet names
+    
+    for(i in 1:nrow(excel_files)){
+      
+      file_name_path <- paste0("./licenses/", excel_files[i,1])
+      
+      if(i == 1){
+        sheet_names <- data.frame(
+          filename = excel_files[i, 1],
+          sheetname = excel_sheets(file_name_path)
+        )
+      } else {
         
+        sheet_names <- sheet_names %>%
+          bind_rows(
+            data.frame(
+              filename = excel_files[i, 1],
+              sheetname = excel_sheets(file_name_path)
+            )
+          )
+        
+      }
+      
+    }
+    
+    # separate out the date & sheet name without date
+    
+    sheet_names2 <- sheet_names %>%
+      mutate(sheetname_code = stringr::str_sub(sheetname, 1, 7),
+             file_date = stringr::str_remove(filename, "\\.xlsx?$"),
+             file_date = stringr::str_remove(file_date, "driving-licence-data-"),
+             file_date = paste(1, file_date, sep = "-"),
+             file_date_date = lubridate::dmy(file_date)
+      )
+    
+   # save file
+    saveRDS(sheet_names2, "sheet_names2.RDS")
+    

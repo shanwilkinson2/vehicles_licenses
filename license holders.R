@@ -5,56 +5,18 @@ library(ggplot2)
 
 # read in driving license data generated below
 sheet_data <- read.csv("pcode dist driving licenses.csv")
+
 # save for app
 saveRDS(sheet_data2, "./vehicles_licenses/pcode_dist_driving_license.RDS")
 
 ################################################################
 
-# get list of filenames & file types that have been downloaded
-excel_files <- list.files(path="./licenses", pattern = ".xls") %>%
-  as.data.frame()
-
-names(excel_files) = "filename"
-
-excel_files <- excel_files %>%
-  mutate(filetype = stringr::str_extract(filename, "\\.xlsx?$"))
-
-# get all sheet names
-
-for(i in 1:nrow(excel_files)){
+# read in list of what's downloaded, generated in "get_data.R"
+  # read list of files
+    excel_files <- readRDS("excel_files.RDS")
   
-  file_name_path <- paste0("./licenses/", excel_files[i,1])
-  
-  if(i == 1){
-    sheet_names <- data.frame(
-      filename = excel_files[i, 1],
-      sheetname = excel_sheets(file_name_path)
-    )
-  } else {
-    
-    sheet_names <- sheet_names %>%
-      bind_rows(
-        data.frame(
-          filename = excel_files[i, 1],
-          sheetname = excel_sheets(file_name_path)
-        )
-      )
-    
-  }
-  
-}
-
-# separate out the date & sheet name without date
-
-sheet_names2 <- sheet_names %>%
-  mutate(sheetname_code = stringr::str_sub(sheetname, 1, 7),
-         file_date = stringr::str_remove(filename, "\\.xlsx?$"),
-         file_date = stringr::str_remove(file_date, "driving-licence-data-"),
-         file_date = paste(1, file_date, sep = "-"),
-         file_date_date = lubridate::dmy(file_date)
-  )
-
-
+  # read list of sheet names per file
+    sheet_names2 <- readRDS("sheet_names2.RDS")
 
 # read in driving licence holders per postcode 
 # different number of rows to skip in earlier files & on different sheets
