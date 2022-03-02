@@ -2,6 +2,7 @@
 
 library(dplyr)
 library(ggplot2)
+library(readxl)
 
 # read in list of what's downloaded, generated in "get_data.R"
   # read list of files
@@ -81,6 +82,17 @@ sheet_data2 <- sheet_data %>%
          pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
   ) %>%
   select(-c(pcode_dist_letters, pcode_dist_numbers))
+
+# tidy data
+sheet_data3 <- sheet_data2 %>%
+  select(-c(sum, driver_count)) %>%
+  tidyr::pivot_longer(cols = -c(pcode_district, file_date),
+                      names_to = "num_points",
+                      values_to = "num_drivers") %>%
+  filter(num_drivers >0 & 
+           num_points != "total" & 
+           pcode_district != "TotalNA"
+         )
 
 
 # write file 
