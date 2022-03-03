@@ -2,9 +2,10 @@
 
 library(dplyr)
 library(ggplot2)
+library(readxl)
 
 # read in driving license data generated below
-sheet_data <- read.csv("pcode dist driving licenses.csv")
+drivers <- readRDS("pcode dist driving licenses.RDS")
 
 # save for app
 saveRDS(sheet_data2, "./vehicles_licenses/pcode_dist_driving_license.RDS")
@@ -85,14 +86,18 @@ sheet_data %>%
 #   arrange(desc(file_date)) %>%
 #   View()
 
-# make postcodes in the usual format (e.g not BL01 but BL1)
+# make postcodes in the usual format (e.g not BL01 but BL1, to include e.g. W1A)
 sheet_data2 <- sheet_data %>%
-  mutate(pcode_dist_letters = stringr::str_extract(pcode_district, "[:alpha:]+"),
-         pcode_dist_numbers = stringr::str_extract(pcode_district, "[:digit:]+"),
-         pcode_dist_numbers = as.numeric(pcode_dist_numbers),
-         pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
+  mutate(pcode_dist1 = stringr::str_extract(pcode_district, "[:alpha:]+"),
+         pcode_dist_a = stringr::str_remove(pcode_district, "^[:alpha:]+"),
+         pcode_dist2 = stringr::str_extract(pcode_dist_a, "[:digit:]+"),
+         pcode_dist2 = as.numeric(pcode_dist2),
+         pcode_dist3 = stringr::str_extract(pcode_dist_a, "[:alpha:]"),
+         pcode_dist3 = tidyr::replace_na(pcode_dist3, ""),
+         pcode_district = paste0(pcode_dist1, pcode_dist2, pcode_dist3)
   ) %>%
-  select(-c(pcode_dist_letters, pcode_dist_numbers))
+  select(-c(pcode_dist1, pcode_dist_a, pcode_dist2, pcode_dist3))
+
 
 
 # write file 
@@ -167,5 +172,5 @@ sheet_data2 <- sheet_data %>%
 
 
 # write file 
-# data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
+# saveRDS(sheet_data2, "pcode dist driving licenses.RDS")
 

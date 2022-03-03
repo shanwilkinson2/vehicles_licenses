@@ -10,6 +10,9 @@ library(readxl)
 
   # read list of sheet names per file
     sheet_names2 <- readRDS("sheet_names2.RDS")
+  
+  # read driver info  
+    drivers <- readRDS("pcode dist driving licenses.RDS")
 
 ##############################################################
 
@@ -39,7 +42,8 @@ for(i in 1: nrow(excel_files)){
                        file_name_date < "2017-01-01"  ~27,
                        TRUE ~23
                      )) %>%
-    mutate(file_date = file_name_date)
+    mutate(file_date = file_name_date) %>% 
+    janitor::clean_names()
   
   # first row is another heading, so is second col
   data <- data[-1, -2] 
@@ -58,8 +62,8 @@ for(i in 1: nrow(excel_files)){
     rm(data)
     rm(file_name_date)
     rm(file_name_path)
-    sheet_data <- sheet_data %>%
-      janitor::clean_names()
+    sheet_data <- sheet_data #%>%
+      #janitor::clean_names()
   }
 }
 
@@ -92,9 +96,39 @@ sheet_data3 <- sheet_data2 %>%
   filter(num_drivers >0 & 
            num_points != "total" & 
            pcode_district != "TotalNA"
+         ) %>%
+  mutate(num_points = stringr::str_remove(num_points, "x"),
+         num_points = stringr::str_remove(num_points, "_[:alnum:]+"),
+         num_points = as.numeric(num_points),
+         pcode_district = toupper(pcode_district)
          )
 
+# join in num drivers - from 'license holders.R'
+  drivers2 <- drivers %>%
+    select(pcode_district, file_date, provisional_total, full_total) %>%
+    mutate(full_provisional_total = provisional_total + full_total,
+           file_date = as.Date(file_date))
 
+  
+  # increasing number of rows???
+  sheet_data4 <- left_join(sheet_data3, drivers2,
+                           by = c("pcode_district" = "pcode_district", 
+                                  "file_date" = "file_date"))
+  
 # write file 
-# data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
+ saveRDS(sheet_data3, "pcode dist penalty points.RDS")
 
+ # check how many unique combinations of pcode dist & file date
+ penalty_pts_test <- sheet_data2 %>% 
+   mutate(pcode_date = paste(pcode_district, file_date),
+          source = "penalty points")  %>%
+   select(pcode_date, source)
+ 
+ drivers_test <- drivers %>%
+   mutate(pcode_date = paste(pcode_district, file_date),
+          source = "drivers")  %>%
+   select(pcode_date, source)
+
+ missing_rows <- anti_join(drivers_test, penalty_pts_test,
+                           by = "pcode_date") 
+ 
