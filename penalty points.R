@@ -78,14 +78,17 @@ for(i in 1: nrow(excel_files)){
     View()
 
 
-# make postcodes in the usual format (e.g not BL01 but BL1)
-sheet_data2 <- sheet_data %>%
-  mutate(pcode_dist_letters = stringr::str_extract(pcode_district, "[:alpha:]+"),
-         pcode_dist_numbers = stringr::str_extract(pcode_district, "[:digit:]+"),
-         pcode_dist_numbers = as.numeric(pcode_dist_numbers),
-         pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
-  ) %>%
-  select(-c(pcode_dist_letters, pcode_dist_numbers))
+  # make postcodes in the usual format (e.g not BL01 but BL1, to include e.g. W1A)
+  sheet_data2 <- sheet_data %>%
+    mutate(pcode_dist1 = stringr::str_extract(pcode_district, "[:alpha:]+"),
+           pcode_dist_a = stringr::str_remove(pcode_district, "^[:alpha:]+"),
+           pcode_dist2 = stringr::str_extract(pcode_dist_a, "[:digit:]+"),
+           pcode_dist2 = as.numeric(pcode_dist2),
+           pcode_dist3 = stringr::str_extract(pcode_dist_a, "[:alpha:]"),
+           pcode_dist3 = tidyr::replace_na(pcode_dist3, ""),
+           pcode_district = paste0(pcode_dist1, pcode_dist2, pcode_dist3)
+    ) %>%
+    select(-c(pcode_dist1, pcode_dist_a, pcode_dist2, pcode_dist3))
 
 # tidy data
 sheet_data3 <- sheet_data2 %>%
