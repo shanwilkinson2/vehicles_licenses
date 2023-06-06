@@ -14,7 +14,7 @@ pcode_dist_pops <- pcode_dist_pops %>%
 
 # add to licenses
 
-licenses <- read.csv("pcode dist driving licenses.csv")
+licenses <- readRDS("pcode dist driving licenses.RDS")
 licenses2 <- left_join(licenses, pcode_dist_pops, 
                       by = c("pcode_district" = "geography")
 ) %>%
