@@ -174,6 +174,8 @@ library(ggplot2)
     
     for(i in 1: nrow(excel_files)){
       
+      print(paste("file number", i, excel_files[i, 1]))
+      
       file_name_path <- paste0("./licenses/", excel_files[i,1])
       file_name_date <- sheet_names2 %>%
         filter(filename == excel_files[i,1]) %>%
@@ -191,6 +193,7 @@ library(ggplot2)
                          skip = case_when(
                            file_name_date == "2012-11-01" ~25,
                            file_name_date == "2013-07-01" ~25,
+                           file_name_date == "2017-06-01" ~22,
                            file_name_date < "2017-01-01"  ~27,
                            TRUE ~23
                          )) %>%
@@ -199,23 +202,24 @@ library(ggplot2)
       # first row is another heading, so is second col
       data <- data[-1, -2] 
       names(data)[1] <- "pcode_district" 
+      # make number of drivers with each number of points numeric
+      data <- data %>%
+        mutate(across(.cols = -c(pcode_district, file_date), .fns = as.numeric))
+      print(summary(data))
       
       if(i == 1) {
         sheet_data <- data
       } else {
         sheet_data <- bind_rows(sheet_data, data)
+        #print(summary(sheet_data))
       }
       
       if(i == nrow(excel_files)) {
-        rm(data)
-        rm(file_name_date)
-        rm(file_name_path)
-        sheet_data <- sheet_data[,1:8] %>%
-          janitor::clean_names()
+        return(sheet_data)
       }
     }
     
-    data %>%
+    sheet_data %>%
       filter(pcode_district == "BL01") %>%
      # select(-`Total`) %>%
       tidyr::pivot_longer(cols = -c(pcode_district, file_date, Total),
