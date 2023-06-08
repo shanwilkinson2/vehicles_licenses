@@ -5,12 +5,21 @@ library(dplyr)
 library(readxl)
 library(ggplot2)
 
+#######################################################
+
+drivers <- data.table::fread("pcode dist driving licenses.csv")
+#points
+
+#######################################################
+
 # read in list of what's downloaded, generated below
   # read list of files
   excel_files <- readRDS("excel_files.RDS")
 
   # read list of sheet names per file
   sheet_names2 <- readRDS("sheet_names2.RDS")
+  
+########################################################
   
 ########################################################
 
@@ -132,7 +141,7 @@ library(ggplot2)
          }
       }
 
-    # test - pcode district has zero if it doesn't need it 
+     # test - pcode district has zero if it doesn't need it 
     # e.g. BL1 is BL01
     # 2016 cells are shifted down with 2 extra rows in postcode district col
     # 2013 - some issue
@@ -166,9 +175,9 @@ library(ggplot2)
     # write file 
     # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
 
- 
+ #######################################################################
     
-  ##### read in penalty points ### REACHED HERE ON UPDATE
+  ##### read in penalty points ### REACHED HERE ON UPDATE########
     
     # different number of rows to skip in earlier files & on different sheets
     
@@ -194,6 +203,8 @@ library(ggplot2)
                            file_name_date == "2012-11-01" ~25,
                            file_name_date == "2013-07-01" ~25,
                            file_name_date == "2017-06-01" ~22,
+                           file_name_date == "2021-10-01" ~24,
+                           file_name_date == "2022-02-01" ~24,
                            file_name_date < "2017-01-01"  ~27,
                            TRUE ~23
                          )) %>%
@@ -205,7 +216,7 @@ library(ggplot2)
       # make number of drivers with each number of points numeric
       data <- data %>%
         mutate(across(.cols = -c(pcode_district, file_date), .fns = as.numeric))
-      print(summary(data))
+      print(names(data))
       
       if(i == 1) {
         sheet_data <- data
@@ -219,24 +230,31 @@ library(ggplot2)
       }
     }
     
-    sheet_data %>%
-      filter(pcode_district == "BL01") %>%
-     # select(-`Total`) %>%
-      tidyr::pivot_longer(cols = -c(pcode_district, file_date, Total),
-                          names_to = "num_points",
-                          values_to = "num_drivers") %>%
-      View()
-      
-    
     # make postcodes in the usual format (e.g not BL01 but BL1)
     sheet_data2 <- sheet_data %>%
+      filter(pcode_district != "District|Sum") %>%
       mutate(pcode_dist_letters = stringr::str_extract(pcode_district, "[:alpha:]+"),
              pcode_dist_numbers = stringr::str_extract(pcode_district, "[:digit:]+"),
              pcode_dist_numbers = as.numeric(pcode_dist_numbers),
              pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
       ) %>%
       select(-c(pcode_dist_letters, pcode_dist_numbers))
+
+    sheet_data2 %>%
+      filter(pcode_district == "BL1") %>%
+      # select(-`Total`) %>%
+      tidyr::pivot_longer(cols = -c(pcode_district, file_date, Total),
+                          names_to = "num_points",
+                          values_to = "num_drivers") %>%
+      View()
     
+    
+    
+    
+    sheet_data2 %>% 
+      group_by(file_date) %>%
+      slice(1) %>%
+      View()
     
     # write file 
     # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
