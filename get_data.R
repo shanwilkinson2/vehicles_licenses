@@ -7,8 +7,8 @@ library(ggplot2)
 
 #######################################################
 
-drivers <- data.table::fread("pcode dist driving licenses.csv")
-#points
+drivers <- readRDS("./vehicles_licenses/pcode dist driving licenses.RDS")
+points <- readRDS("./vehicles_licenses/pcode dist points.RDS")
 
 #######################################################
 
@@ -174,10 +174,11 @@ drivers <- data.table::fread("pcode dist driving licenses.csv")
     
     # write file 
     # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
+    # saveRDS(sheet_data2, "./vehicles_licenses/pcode dist driving licenses.RDS")
 
  #######################################################################
     
-  ##### read in penalty points ### REACHED HERE ON UPDATE########
+  ##### read in penalty points 
     
     # different number of rows to skip in earlier files & on different sheets
     
@@ -238,14 +239,29 @@ drivers <- data.table::fread("pcode dist driving licenses.csv")
              pcode_dist_numbers = as.numeric(pcode_dist_numbers),
              pcode_district = paste0(pcode_dist_letters, pcode_dist_numbers)
       ) %>%
-      select(-c(pcode_dist_letters, pcode_dist_numbers))
+      select(-c(pcode_dist_letters, pcode_dist_numbers)) %>%
+      tidyr::pivot_longer(cols = -c(pcode_district, file_date, Total),
+                          names_to = "num_points",
+                          values_to = "num_drivers") %>%
+      mutate(num_points = as.numeric(num_points)) %>%
+      filter(num_points != "Sum" 
+      ) 
+    
+    # save file
+    saveRDS(sheet_data2, "./vehicles_licenses/pcode dist points.RDS")
 
+    # doing some checks
     sheet_data2 %>%
       filter(pcode_district == "BL1") %>%
       # select(-`Total`) %>%
       tidyr::pivot_longer(cols = -c(pcode_district, file_date, Total),
                           names_to = "num_points",
                           values_to = "num_drivers") %>%
+      mutate(num_points = as.numeric(num_points)) %>%
+      filter(num_points != "Sum" &
+             num_drivers != 0
+             ) %>%
+      na.omit() %>%
       View()
     
     
