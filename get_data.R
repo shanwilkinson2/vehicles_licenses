@@ -7,10 +7,10 @@ library(ggplot2)
 
 #######################################################
 
-drivers <- readRDS("./vehicles_licenses/pcode dist driving licenses.RDS")
-points <- readRDS("./vehicles_licenses/pcode dist points.RDS")
+drivers <- readRDS("pcode dist driving licenses.RDS")
+points <- readRDS("pcode dist points.RDS")
 
-#######################################################
+########################################################
 
 # read in list of what's downloaded, generated below
   # read list of files
@@ -273,7 +273,7 @@ points <- readRDS("./vehicles_licenses/pcode dist points.RDS")
       View()
     
     # write file 
-    # data.table::fwrite(sheet_data2, "pcode dist driving licenses.csv")
+    # saveRDS(sheet_data2, "pcode dist driving licenses.csv")
     
 ##################################################################    
     

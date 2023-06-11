@@ -8,7 +8,7 @@ library(plotly)
 # load data #########################################
 # for testing - setwd("./vehicles_licenses")
 
-licenses <- readRDS("pcode_dist_driving_license.RDS")
+licenses <- readRDS("pcode dist driving licenses.RDS")
 
 # UI ################################################
 

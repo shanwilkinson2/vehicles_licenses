@@ -1,4 +1,4 @@
-# postcode district populaion
+# postcode district populaion & add to drivers
 
 # from here https://www.nomisweb.co.uk/census/2011/ks101ew
 
@@ -24,4 +24,4 @@ licenses2 <- left_join(licenses, pcode_dist_pops,
 # save for app
 
 saveRDS(licenses2,
-        "./vehicles_licenses/pcode_dist_driving_license.RDS")
+        "./vehicles_licenses/pcode dist driving licenses.RDS")
