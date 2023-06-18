@@ -1,5 +1,6 @@
 # visualise license data
 
+library(dplyr)
 library(plotly)
 
 sheet_data <- read.csv("pcode dist driving licenses.csv")

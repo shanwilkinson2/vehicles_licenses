@@ -4,11 +4,24 @@ library(shiny)
 library(dplyr)
 library(shinydashboard)
 library(plotly)
+library(glue)
 
 # load data #########################################
 # for testing - setwd("./vehicles_licenses")
 
-licenses <- readRDS("pcode dist driving licenses.RDS")
+drivers <- readRDS("pcode dist driving licenses.RDS")
+points <- readRDS("pcode dist points.RDS")
+
+points2 <- points %>%
+  # Total is the same but not on all files 
+  select(-Total) %>%
+  group_by(file_date, pcode_district)%>%
+  mutate(calc_total = sum(num_drivers, na.rm = TRUE)) %>%
+  # join in num drivers
+  left_join(drivers %>% 
+              select(pcode_district, file_date, full_licenses_total = full_total),
+            by = c("file_date", "pcode_district")) 
+
 
 # UI ################################################
 
@@ -19,10 +32,10 @@ ui <- dashboardPage(skin = "red",
   dashboardSidebar(
     sidebarMenu(
       menuItem(
-        "License holders", tabName = "licenses", icon = icon("user")
+        "Drivers", tabName = "drivers", icon = icon("user")
       ),
       menuItem(
-        "Vehicles", tabName = "vehicles", icon = icon("car")
+        "Points", tabName = "points", icon = icon("triangle-exclamation")
       ),
       menuItem(
         "About", tabName = "about", icon = icon("info-circle")
@@ -42,14 +55,25 @@ ui <- dashboardPage(skin = "red",
   dashboardBody(
     tabItems(
       tabItem(
-        tabName = "licenses",
-        h2("License holders"),
-        plotlyOutput("licenses_chart"),
-        downloadButton("license_data", "Get the data (csv)")
+        tabName = "drivers",
+        h2("Drivers"),
+        plotlyOutput("drivers_chart"),
+        downloadButton("drivers_data", "Get the data (csv)")
       ),
       tabItem(
-        tabName = "vehicles",
-        h2("Vehicles")
+        tabName = "points",
+        h2("Points"),
+        infoBoxOutput("max_points_box"),
+        # select number of points
+        uiOutput("points_slider"),
+        # sliderInput(inputId = "select_num_points", 
+        #             label = "Select number of points:", 
+        #             min= 1, max= max(points_chart_data1()$num_points),
+        #             value =c(6, max(points_chart_data1()$num_points))
+        #             ),
+        p("Runs very slowly....... Add slider to adjust number of points"),
+        plotlyOutput("points_chart"),
+        downloadButton("points_data", "Get the data (csv)")
       ),
       tabItem(
         tabName = "about",
@@ -80,35 +104,41 @@ server <- function(input, output, session) {
   # generate options for pcode dist dropdown
     updateSelectizeInput(session = session, 
                          inputId = "select_pcode_dist", 
-                         choices = licenses$pcode_district, 
+                         choices = drivers$pcode_district, 
                          server = TRUE,
                          selected = c("BL3", "BL5", "BL7")
                          )
   
   
-  # generate data for download button
+  # generate data for download buttons
   output$license_data <- downloadHandler(filename = "license_holders.csv",
                                       # create file for downloading
                                       content = function(file){
-                                        write.csv(licenses
+                                        write.csv(drivers
                                                   , file)
                                       })
   
+  output$points_data <- downloadHandler(filename = "penalty_points.csv",
+                                         # create file for downloading
+                                         content = function(file){
+                                           write.csv(points2
+                                                     , file)
+                                         })
+  
   # make chart of license holders over time
   
-    chart_data <- reactive({licenses %>%
+    drivers_chart_data <- reactive({drivers %>%
       filter(pcode_district %in% input$select_pcode_dist) %>%
-      # filter(pcode_district %in% c("BL1", "BL2", "BL3")) %>%
       group_by(pcode_district)
     })
     
-    output$licenses_chart <- renderPlotly({
-    chart_data() %>%
+    output$drivers_chart <- renderPlotly({
+    drivers_chart_data() %>%
       plot_ly() %>%
       add_lines(x = ~file_date, y = ~full_licenses_per_resident, color = ~pcode_district) %>%
       layout(
         xaxis = list(title = "Date",
-                     tickvals = format(chart_data()$file_date, format = "%B %Y"),
+                     #tickvals = format(drivers_chart_data()$file_date, format = "%B %Y"),
                      tickangle = -45),
         yaxis = list(title = "Full license holders per resident"), 
         title = "Driving license holders over time"
@@ -116,6 +146,51 @@ server <- function(input, output, session) {
     
   })
   
+  # generate reactive slider 
+    output$points_slider <- renderUI({
+      sliderInput("points_slider", "Points slider",
+                  min = min(points_chart_data1()$num_points), 
+                  max = max(points_chart_data1()$num_points),
+                  value = c(6, max(points_chart_data1()$num_points)))
+    })
+    
+  # generate data for points chart
+    points_chart_data1 <- reactive({
+      points2 %>%
+      filter(pcode_district %in% input$select_pcode_dist) 
+    })
+    
+    output$max_points_box <- renderInfoBox({
+      infoBox("Max points:", 
+              max(points_chart_data1()$num_points, na.rm = TRUE),
+              icon = icon("arrow-circle-up"),
+              color = "red"
+              )
+      })
+    
+    points_chart_data2 <- reactive({
+      points_chart_data1() %>%
+        group_by(file_date, pcode_district, full_licenses_total) %>%
+        filter(num_points >=12) %>%
+        summarise(points_total = sum(num_drivers, na.rm = TRUE)) %>%
+        ungroup() %>%
+        mutate(per_10k_licenses = points_total/full_licenses_total*10000) %>%
+        group_by(pcode_district) 
+    })
+    
+  # generate points chart
+    output$points_chart <- renderPlotly({
+    plot_ly(points_chart_data2()) %>%
+      add_lines(x = ~file_date, y = ~per_10k_licenses, color = ~pcode_district) %>%
+      layout(
+        xaxis = list(title = "Date",
+                     #tickvals = format(chart_data$file_date, format = "%B %Y"),
+                     tickangle = -45),
+        yaxis = list(title = "Rate with selected points over time"), 
+        title = glue("12+ points per 10,000 full license holders")
+      )  
+    })
+    
 }
 
 # Run the application 

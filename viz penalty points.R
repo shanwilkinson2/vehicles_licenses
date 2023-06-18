@@ -3,9 +3,11 @@
 library(dplyr)
 library(ggplot2)
 library(plotly)
+library(crosstalk)
 
 # load data (generated in 'get_data.R')
   points <- readRDS("pcode dist points.RDS")
+  drivers <- readRDS("pcode dist driving licenses.RDS")
 
 #######################################################
  
@@ -22,23 +24,21 @@ library(plotly)
    
 ##################################################################  
   
-  chart_data <- points2 %>%
+ chart_data <- 
+    points2 %>%
     group_by(file_date, pcode_district, full_licenses_total) %>%
     filter(num_points >=12) %>%
     summarise(points_total = sum(num_drivers, na.rm = TRUE)) %>%
-    mutate(per_10k_licenses = points_total/full_licenses_total*10000) 
-
-  
-  chart_data2 <- chart_data %>%
+    mutate(per_10k_licenses = points_total/full_licenses_total*10000) %>%
+  #chart_data %>%
     filter(pcode_district %in% c("BL1", "BL2", "BL3", "WN1")) %>%
-    group_by(pcode_district)
-  
-  chart_data2 %>%
-    plot_ly() %>%
+    group_by(pcode_district) 
+
+    plot_ly(chart_data) %>%
     add_lines(x = ~file_date, y = ~per_10k_licenses, color = ~pcode_district) %>%
     layout(
       xaxis = list(title = "Date",
-                   tickvals = format(chart_data2$file_date, format = "%B %Y"),
+                   #tickvals = format(chart_data$file_date, format = "%B %Y"),
                    tickangle = -45),
       yaxis = list(title = "Rate of 12+ points over time"), 
       title = "12+ points per 10,000 full license holders"
