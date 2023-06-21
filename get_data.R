@@ -244,7 +244,9 @@ points <- readRDS("pcode dist points.RDS")
                           names_to = "num_points",
                           values_to = "num_drivers") %>%
       mutate(num_points = as.numeric(num_points)) %>%
-      filter(num_points != "Sum" 
+      filter(num_points != "Sum",
+             num_points != 0,
+             !is.na(num_points)
       ) 
     
     # save file

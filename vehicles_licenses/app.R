@@ -5,6 +5,7 @@ library(dplyr)
 library(shinydashboard)
 library(plotly)
 library(glue)
+library(data.table)
 
 # load data #########################################
 # for testing - setwd("./vehicles_licenses")
@@ -22,6 +23,13 @@ points2 <- points %>%
               select(pcode_district, file_date, full_licenses_total = full_total),
             by = c("file_date", "pcode_district")) 
 
+# to speed things up
+  points2 <- setDT(points2)
+  setindex(points2, pcode_district)
+  setindex(points2, num_points)
+  
+  drivers <- setDT(drivers)
+  setindex(drivers, pcode_district)
 
 # UI ################################################
 
@@ -63,15 +71,20 @@ ui <- dashboardPage(skin = "red",
       tabItem(
         tabName = "points",
         h2("Points"),
-        infoBoxOutput("max_points_box"),
+        fluidRow(
+          box(title = "Max points", 
+              status = "warning", solidHeader = TRUE,
+              infoBoxOutput("max_points_box")),
         # select number of points
-        uiOutput("points_slider"),
+          box(title = "Select points range", 
+              status = "warning", solidHeader = TRUE,
+              uiOutput("points_slider")),
+        ),
         # sliderInput(inputId = "select_num_points", 
         #             label = "Select number of points:", 
         #             min= 1, max= max(points_chart_data1()$num_points),
         #             value =c(6, max(points_chart_data1()$num_points))
         #             ),
-        p("Runs very slowly....... Add slider to adjust number of points"),
         plotlyOutput("points_chart"),
         downloadButton("points_data", "Get the data (csv)")
       ),
@@ -171,7 +184,9 @@ server <- function(input, output, session) {
     points_chart_data2 <- reactive({
       points_chart_data1() %>%
         group_by(file_date, pcode_district, full_licenses_total) %>%
-        filter(num_points >=12) %>%
+        #filter(num_points >=12) %>%
+        filter(num_points>= input$points_slider[1] &
+                 num_points <= input$points_slider[2]) %>%
         summarise(points_total = sum(num_drivers, na.rm = TRUE)) %>%
         ungroup() %>%
         mutate(per_10k_licenses = points_total/full_licenses_total*10000) %>%
@@ -187,7 +202,7 @@ server <- function(input, output, session) {
                      #tickvals = format(chart_data$file_date, format = "%B %Y"),
                      tickangle = -45),
         yaxis = list(title = "Rate with selected points over time"), 
-        title = glue("12+ points per 10,000 full license holders")
+        title = glue("{input$points_slider[1]} - {input$points_slider[2]} points per 10,000 full license holders")
       )  
     })
     
