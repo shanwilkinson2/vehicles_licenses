@@ -80,11 +80,6 @@ ui <- dashboardPage(skin = "red",
               status = "warning", solidHeader = TRUE,
               uiOutput("points_slider")),
         ),
-        # sliderInput(inputId = "select_num_points", 
-        #             label = "Select number of points:", 
-        #             min= 1, max= max(points_chart_data1()$num_points),
-        #             value =c(6, max(points_chart_data1()$num_points))
-        #             ),
         plotlyOutput("points_chart"),
         downloadButton("points_data", "Get the data (csv)")
       ),
@@ -119,7 +114,7 @@ server <- function(input, output, session) {
                          inputId = "select_pcode_dist", 
                          choices = drivers$pcode_district, 
                          server = TRUE,
-                         selected = c("BL3", "BL5", "BL7")
+                         selected = c("BL1", "M1", "OX1")
                          )
   
   
@@ -148,13 +143,22 @@ server <- function(input, output, session) {
     output$drivers_chart <- renderPlotly({
     drivers_chart_data() %>%
       plot_ly() %>%
-      add_lines(x = ~file_date, y = ~full_licenses_per_resident, color = ~pcode_district) %>%
+      add_lines(x = ~file_date, 
+                y = ~full_licenses_per_resident, 
+                color = ~pcode_district,
+                text = ~glue("{prettyNum(full_total, big.mark = ',')}/ {prettyNum(all_usual_residents, big.mark = ',')} residents"),
+                hovertemplate = paste(
+                  "%{x|%B %Y}<br>",
+                  "licenses per resident: %{y:.2f}<br>",
+                  "%{text}"
+                )
+                ) %>%
       layout(
         xaxis = list(title = "Date",
                      #tickvals = format(drivers_chart_data()$file_date, format = "%B %Y"),
                      tickangle = -45),
         yaxis = list(title = "Full license holders per resident"), 
-        title = "Driving license holders over time"
+        title = "Driving license holders over time<br>(2011 usual residents) "
       )
     
   })
@@ -183,10 +187,12 @@ server <- function(input, output, session) {
     
     points_chart_data2 <- reactive({
       points_chart_data1() %>%
+        filter(
+          # num_points >= input$points_slider[1] &
+          # num_points <= input$points_slider[2])
+        between(num_points, input$points_slider[1], input$points_slider[2])
+        ) %>%
         group_by(file_date, pcode_district, full_licenses_total) %>%
-        #filter(num_points >=12) %>%
-        filter(num_points>= input$points_slider[1] &
-                 num_points <= input$points_slider[2]) %>%
         summarise(points_total = sum(num_drivers, na.rm = TRUE)) %>%
         ungroup() %>%
         mutate(per_10k_licenses = points_total/full_licenses_total*10000) %>%
@@ -196,7 +202,16 @@ server <- function(input, output, session) {
   # generate points chart
     output$points_chart <- renderPlotly({
     plot_ly(points_chart_data2()) %>%
-      add_lines(x = ~file_date, y = ~per_10k_licenses, color = ~pcode_district) %>%
+      add_lines(x = ~file_date, 
+                y = ~per_10k_licenses, 
+                color = ~pcode_district,
+                text = ~glue("{prettyNum(points_total, big.mark = ',')} drivers/ {prettyNum(full_licenses_total, big.mark = ',')}"),
+                hovertemplate = paste(
+                  "%{x|%B %Y}<br>",
+                  "Selected points per 10,000: %{y:.2f}<br>",
+                  "%{text}"
+                )
+      ) %>%
       layout(
         xaxis = list(title = "Date",
                      #tickvals = format(chart_data$file_date, format = "%B %Y"),
